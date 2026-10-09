@@ -641,7 +641,7 @@
       <form id="applyForm" action="https://api.web3forms.com/submit" method="POST" enctype="multipart/form-data" novalidate>
 
         <!-- Web3Forms -->
-        <input type="hidden" name="access_key" value="cab32f9c-775d-48d1-8c6a-8067f475f013">
+        <input type="hidden" name="access_key" value="YOUR_WEB3FORMS_ACCESS_KEY">
         <input type="hidden" name="subject" value="Нова кандидатура: Асистент в социалните медии">
         <input type="hidden" name="from_name" value="Todorov Tees – Кандидатури">
         <input type="checkbox" name="botcheck" class="botcheck" tabindex="-1" autocomplete="off">
@@ -893,7 +893,7 @@
         <!-- ================= 6. Мотивация и файлове ================= -->
         <fieldset class="step" data-title="Мотивация и файлове">
           <legend class="step-title">Мотивация и файлове</legend>
-          <p class="step-desc">Последната стъпка. Разкажи ни защо си подходящ/а и прикачи документите си.</p>
+          <p class="step-desc">Последната стъпка. Разкажи ни защо си подходящ/а и добави линкове към CV-то и работата си.</p>
 
           <div class="field">
             <label for="why">Защо искаш да работиш в Todorov Tees?</label>
@@ -906,25 +906,16 @@
           </div>
 
           <div class="field">
-            <span class="label">CV (PDF)</span>
-            <label class="file" data-empty="Избери PDF файл">
-              <input type="file" name="CV PDF" accept="application/pdf,.pdf">
-              <div class="file-ui">
-                <span class="file-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></span>
-                <span class="file-text"><strong>Качи CV</strong><small>Избери PDF файл</small></span>
-              </div>
-            </label>
+            <label for="cvLink">Линк към CV<span class="star">*</span></label>
+            <input type="url" id="cvLink" name="CV link" inputmode="url" autocomplete="off" placeholder="https://drive.google.com/..." pattern="https?://.+" data-msg="Въведи пълен линк, който започва с https://" required>
+            <p class="hint">Качи CV-то си в Google Drive, Dropbox или друго облачно хранилище и постави линка тук. Провери дали достъпът е отворен за всеки, който има линка.</p>
+            <p class="error"></p>
           </div>
 
           <div class="field">
-            <span class="label">Портфолио, снимки и документи <span class="req">(до 15 файла общо)</span></span>
-            <label class="file" data-empty="Можеш да избереш до 15 файла">
-              <input type="file" id="portfolioFiles" name="Portfolio files" multiple>
-              <div class="file-ui">
-                <span class="file-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg></span>
-                <span class="file-text"><strong>Качи файлове</strong><small>Можеш да избереш до 15 файла</small></span>
-              </div>
-            </label>
+            <label for="portfolioLinks">Линкове към портфолио, снимки и документи <span class="req">(по желание)</span></label>
+            <textarea id="portfolioLinks" name="Portfolio links" class="tall" autocomplete="off" placeholder="Постави по един линк на ред:&#10;https://drive.google.com/...&#10;https://www.dropbox.com/..."></textarea>
+            <p class="hint">Може да е една папка с всичко или отделни линкове към снимки и документи – по един на ред.</p>
             <p class="error"></p>
           </div>
 
@@ -960,13 +951,11 @@
 
   <script>
     (function () {
-      var MAX_PORTFOLIO_FILES = 15;
       var form = document.getElementById('applyForm');
       var steps = Array.prototype.slice.call(form.querySelectorAll('.step'));
       var nextBtn = document.getElementById('nextBtn');
       var backBtn = document.getElementById('backBtn');
       var formError = document.getElementById('formError');
-      var portfolio = document.getElementById('portfolioFiles');
       var current = 0;
 
       /* ---------- Навигация между стъпките ---------- */
@@ -1004,12 +993,14 @@
         return el.getAttribute('data-msg') || 'Провери въведената стойност.';
       }
 
-      function portfolioTooMany() {
-        return portfolio.files.length > MAX_PORTFOLIO_FILES;
-      }
+      var portfolioLinks = document.getElementById('portfolioLinks');
+      var LINKS_MESSAGE = 'Всеки линк трябва да е на нов ред и да започва с https://';
 
-      function portfolioMessage() {
-        return 'Можеш да качиш до ' + MAX_PORTFOLIO_FILES + ' файла общо. Избрани са ' + portfolio.files.length + '.';
+      function linksValid() {
+        return portfolioLinks.value.split(/\r?\n/)
+          .map(function (l) { return l.trim(); })
+          .filter(Boolean)
+          .every(function (l) { return /^https?:\/\/\S+$/i.test(l); });
       }
 
       function validateStep(step) {
@@ -1033,9 +1024,9 @@
           }
         });
 
-        if (step.contains(portfolio) && portfolioTooMany()) {
-          setError(portfolio, portfolioMessage());
-          firstBad = firstBad || portfolio;
+        if (step.contains(portfolioLinks) && !linksValid()) {
+          setError(portfolioLinks, LINKS_MESSAGE);
+          firstBad = firstBad || portfolioLinks;
         }
 
         if (firstBad) firstBad.focus();
@@ -1045,7 +1036,6 @@
       form.addEventListener('input', function (e) { clearError(e.target); });
       form.addEventListener('change', function (e) {
         clearError(e.target);
-        if (e.target === portfolio && portfolioTooMany()) setError(portfolio, portfolioMessage());
       });
 
       backBtn.addEventListener('click', function () { if (current > 0) show(current - 1); });
@@ -1134,28 +1124,6 @@
         if (e.key === 'Escape' && !countryList.hidden) { closeList(); countryBtn.focus(); }
       });
       markSelected();
-
-      /* ---------- Файлове ---------- */
-      Array.prototype.forEach.call(form.querySelectorAll('.file'), function (wrap) {
-        var input = wrap.querySelector('input[type="file"]');
-        var small = wrap.querySelector('small');
-        input.addEventListener('change', function () {
-          var files = Array.prototype.slice.call(input.files);
-          if (!files.length) {
-            small.textContent = wrap.getAttribute('data-empty');
-            wrap.classList.remove('has-files');
-          } else {
-            small.textContent = files.length === 1 ? files[0].name : files.length + ' файла: ' + files.map(function (f) { return f.name; }).join(', ');
-            wrap.classList.add('has-files');
-          }
-        });
-        ['dragenter', 'dragover'].forEach(function (ev) {
-          wrap.addEventListener(ev, function () { wrap.classList.add('drag'); });
-        });
-        ['dragleave', 'drop'].forEach(function (ev) {
-          wrap.addEventListener(ev, function () { wrap.classList.remove('drag'); });
-        });
-      });
 
       /* ---------- Събиране на отметките ---------- */
       function collect(group, otherId) {
